@@ -1,0 +1,114 @@
+
+import tensorflow as tf
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
+from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+import os
+
+
+IMG_SIZE    = 224          # MobileNetV2 expects 224x224
+BATCH_SIZE  = 32           # process 32 photos at once
+EPOCHS      = 15           # how many times to go through the data
+DATA_DIR    = '/content/plantvillage dataset'
+
+
+train_datagen = ImageDataGenerator(
+    rescale=1./255,          # normalize pixel values from 0-255 to 0-1
+    rotation_range=20,       # rotate photos randomly by up to 20 degrees
+    width_shift_range=0.2,   # shift photo left/right slightly
+    height_shift_range=0.2,  # shift photo up/down slightly
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,    # flip photos left to right
+    validation_split=0.2     # use 20% of data for validation
+)
+
+train_gen = train_datagen.flow_from_directory(
+    DATA_DIR,
+    target_size=(IMG_SIZE, IMG_SIZE),
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='training'
+)
+
+val_gen = train_datagen.flow_from_directory(
+    DATA_DIR,
+    target_size=(IMG_SIZE, IMG_SIZE),
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='validation'
+)
+
+NUM_CLASSES = len(train_gen.class_indices)
+print(f"Found {NUM_CLASSES} disease classes!")
+print("Classes:", train_gen.class_indices)
+
+
+base_model = MobileNetV2(
+    input_shape=(IMG_SIZE, IMG_SIZE, 3),
+    include_top=False,
+    weights='imagenet'   # use weights already trained by Google
+)
+
+
+base_model.trainable = False
+
+
+x = base_model.output
+x = GlobalAveragePooling2D()(x)      # squish feature maps into a single vector
+x = Dropout(0.3)(x)                  # randomly turn off 30% of neurons to prevent overfitting
+predictions = Dense(NUM_CLASSES, activation='softmax')(x)  # final disease prediction
+
+model = Model(inputs=base_model.input, outputs=predictions)
+
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+callbacks = [
+    EarlyStopping(patience=4, restore_best_weights=True, verbose=1),
+    ModelCheckpoint('best_model.h5', save_best_only=True, verbose=1)
+]
+
+print("\n Training started. This will take ~20-30 mins on GPU...")
+history = model.fit(
+    train_gen,
+    validation_data=val_gen,
+    epochs=EPOCHS,
+    callbacks=callbacks
+)
+
+print(f"\n Training complete!")
+print(f"Final validation accuracy: {max(history.history['val_accuracy'])*100:.1f}%")
+
+
+print("\n Fine-tuning top layers...")
+base_model.trainable = True
+for layer in base_model.layers[:-30]:   # keep bottom layers frozen
+    layer.trainable = False
+
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),  # smaller lr for fine-tuning
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+model.fit(
+    train_gen,
+    validation_data=val_gen,
+    epochs=5,
+    callbacks=callbacks
+)
+
+print("\n Fine-tuning complete! Model saved as best_model.h5")
+
+
+import json
+class_names = {v: k for k, v in train_gen.class_indices.items()}
+with open('class_names.json', 'w') as f:
+    json.dump(class_names, f)
+print("Class names saved to class_names.json")
