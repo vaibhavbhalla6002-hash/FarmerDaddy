@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg-color: #f6f5f3;
+  --text-main: #2b2723;
+  --text-primary: #1e1e1d;
+  --text-muted: #6e6b66;
+  --primary-orange: #df882d;
+  --primary-orange-light: #fbe6d2;
+  --primary-orange-hover: #c47625;
+  --primary-yellow: #ddce51;
+  --card-bg: #ffffff;
+  --border-color: #e5e3de;
+  --gradient-sunny: linear-gradient(135deg, #cc832c 0%, #e8a637 100%);
+  --nav-active-bg: #eb9c3f;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  /* The app looks mobile optimized, let's create a mobile container frame */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+}
+
+#root {
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--bg-color);
+  min-height: 100vh;
+  position: relative;
+  box-shadow: 0 0 40px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+/* Scrollbar setup for webkit */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Google Translate Overrides */
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+body {
+  top: 0px !important;
+}
+.goog-logo-link {
+  display: none !important;
+}
+.goog-te-gadget {
+  height: 0;
+  overflow: hidden;
+  color: transparent !important;
+}
+#google_translate_element {
+  position: absolute;
+  top: -100px;
+  opacity: 0;
+  pointer-events: none;
+}
+.goog-tooltip, .goog-tooltip:hover {
+  display: none !important;
+}
+.goog-text-highlight {
+  background-color: transparent !important;
+  border: none !important; 
+  box-shadow: none !important;
+}
+
+/* Prevent translation of specific elements */
+[translate="no"] {
+  -webkit-user-select: none;
+  display: block;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+}
